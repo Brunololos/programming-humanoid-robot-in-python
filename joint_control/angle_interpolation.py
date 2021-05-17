@@ -21,7 +21,11 @@
 
 
 from pid import PIDAgent
-from keyframes import hello
+from keyframes import *
+import numpy as np
+from matplotlib import pyplot as plt
+from scipy import interpolate as ip
+
 
 
 class AngleInterpolationAgent(PIDAgent):
@@ -41,10 +45,37 @@ class AngleInterpolationAgent(PIDAgent):
     def angle_interpolation(self, keyframes, perception):
         target_joints = {}
         # YOUR CODE HERE
+        for j in range(len(keyframes[0])):
+            joint = keyframes[0][j]
+        
+            keytimes = keyframes[1][j]
+            angles = [data[0] for data in keyframes[2][j]]
+            #vectangles = [np.array([keytimes[i], angles[i]]) for i in range(0, len(keytimes))]
+            #pangles = [data[1][2] for data in keyframes[2][j]]
+            time = perception.time
 
+            perkeytimes = keytimes + [keytimes[-1] + 1.0]
+            perangles = angles + [angles[0]]
+
+            anim_len = max(5, perkeytimes[-1])
+            animation_time = (time % anim_len)
+            #spline = ip.CubicSpline(keytimes, angles, bc_type='natural')
+            spline = ip.CubicSpline(perkeytimes, perangles, bc_type='periodic')
+            #spline = ip.BSpline(np.array(angles), np.array([1, 1, 1, 1 ]), 3)
+            target_joints[joint] = spline((animation_time + 0.01) % anim_len)
+
+
+
+            #x = [(i/100)*keytimes[-1] for i in range(0, 100)]
+            #y = [spline((i/100)*keytimes[-1]) for i in range(0, 100)]
+
+            #plt.plot(x, y, '--')
+            #plt.plot(keytimes, angles, 'o')
+            #plt.show()
         return target_joints
 
 if __name__ == '__main__':
     agent = AngleInterpolationAgent()
+
     agent.keyframes = hello()  # CHANGE DIFFERENT KEYFRAMES
     agent.run()

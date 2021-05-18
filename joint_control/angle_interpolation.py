@@ -50,29 +50,31 @@ class AngleInterpolationAgent(PIDAgent):
         
             keytimes = keyframes[1][j]
             angles = [data[0] for data in keyframes[2][j]]
-            #vectangles = [np.array([keytimes[i], angles[i]]) for i in range(0, len(keytimes))]
-            #pangles = [data[1][2] for data in keyframes[2][j]]
             time = perception.time
 
-            perkeytimes = keytimes + [keytimes[-1] + 1.0]
+            perkeytimes = keytimes + [keytimes[-1] + 0.1]
             perangles = angles + [angles[0]]
 
-            anim_len = max(5, perkeytimes[-1])
+            anim_len = max(5, keytimes[-1])
             animation_time = (time % anim_len)
-            #spline = ip.CubicSpline(keytimes, angles, bc_type='natural')
-            spline = ip.CubicSpline(perkeytimes, perangles, bc_type='periodic')
+            spline = ip.CubicSpline(keytimes, angles, bc_type='natural') #Current best
+            #spline = ip.CubicSpline(perkeytimes, perangles, bc_type='periodic')
+            #spl = ip.splrep(keytimes, angles, k=min(3, len(keytimes)-1))
             #spline = ip.BSpline(np.array(angles), np.array([1, 1, 1, 1 ]), 3)
+            #spline = np.poly1d(spl[1])
             target_joints[joint] = spline((animation_time + 0.01) % anim_len)
 
+            if "LHipYawPitch" in target_joints:
+                target_joints["RHipYawPitch"] = target_joints["LHipYawPitch"]
 
-
-            #x = [(i/100)*keytimes[-1] for i in range(0, 100)]
-            #y = [spline((i/100)*keytimes[-1]) for i in range(0, 100)]
-
-            #plt.plot(x, y, '--')
-            #plt.plot(keytimes, angles, 'o')
-            #plt.show()
         return target_joints
+
+    def calc_angle(self, spline, x_coord, keytimes, anim_len):
+        for i in range(0, len(spline)):
+            if (keytimes[i] >= x_coord):
+                return np.polyval(spline[i - 1], (x_coord + 0.1) % anim_len)
+            if(i == len(spline)-1):
+                return np.polyval(spline[i], (x_coord + 0.1) % anim_len)
 
 if __name__ == '__main__':
     agent = AngleInterpolationAgent()

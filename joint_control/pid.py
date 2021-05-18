@@ -34,8 +34,8 @@ class PIDController(object):
         self.e1 = np.zeros(size)
         self.e2 = np.zeros(size)
         # ADJUST PARAMETERS BELOW
-        delay = 0
-        self.Kp = 20
+        delay = 3
+        self.Kp = 10
         self.Ki = 0.0
         self.Kd = 0.1
         self.y = deque(np.zeros(size), maxlen=delay + 1)
@@ -54,54 +54,19 @@ class PIDController(object):
         '''
         # YOUR CODE HERE
 
-        #delayed_prediction = 0
-        #if(len(self.y) > 0):
-        #    delayed_prediction = self.y.popleft()
-        '''
-        e0 = target - ((sensor - self.u) + delayed_prediction) 
-        
-        speed = (self.Kp + self.Ki*self.dt + (self.Kd/self.dt))*e0 - (self.Kp + 2*(self.Kd/self.dt))*self.e1 + (self.Kd/self.dt)*self.e2
-        self.e2 = self.e1
-        self.e1 = e0
+        prediction = self.u * self.dt
+        self.y.append(prediction)
 
-        self.u = self.u + speed*self.dt
+        delayed_prediction = self.y[0]
 
-        last_prediction = 0
-        if(len(self.y) > 0):
-            last_prediction = self.y.pop()
-            self.y.append(last_prediction)
-        self.y.append((last_prediction +self.u*self.dt) - self.u)''' #angle(t) = angle(t-1) + speed * dt
-
-        #ycur = self.y.pop()
-        #self.y.append(ycur)
-        #-----------------------------------------------------------------------------------
-        #prediction = self.y.pop() #entweder pop für newest
-        #self.y.append(prediction)
-        prediction = sensor + self.u * self.dt
-
-        last_prediction = self.y.popleft()
-        last_prediction_error = sensor - last_prediction
-
-        #prediction = 0
-        #if(len(self.y) >= 1):
-        #    prediction = self.y.popleft() # oderentweder popleft für second_latest
-        #    self.y.append(prediction)
-
-
-        adjusted_prediction = prediction + last_prediction_error
-
-        e0 = target - adjusted_prediction
+        e0 = target - (sensor + delayed_prediction)
 
         speed = (self.Kp + self.Ki * self.dt + (self.Kd / self.dt)) * e0 - (
-                    self.Kp + 2 * (self.Kd / self.dt)) * self.e1 + (self.Kd / self.dt) * self.e2
+                self.Kp + 2 * (self.Kd / self.dt)) * self.e1 + (self.Kd / self.dt) * self.e2
 
         self.u = self.u + speed
         self.e2 = self.e1
         self.e1 = e0
-        #-----------------------------------------------------------------------------------
-
-        #self.y.append(sensor + self.u * self.dt)
-        self.y.append(prediction)
 
         return self.u
 

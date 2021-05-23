@@ -21,6 +21,7 @@ import sys
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'joint_control'))
 
 from numpy.matlib import matrix, identity
+import numpy as np
 
 from angle_interpolation import AngleInterpolationAgent
 
@@ -35,9 +36,13 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
         self.transforms = {n: identity(4) for n in self.joint_names}
 
         # chains defines the name of chain and joints of the chain
-        self.chains = {'Head': ['HeadYaw', 'HeadPitch']
-                       # YOUR CODE HERE
-                       }
+        self.chains = {
+            'Head': ['HeadYaw', 'HeadPitch'],
+            'LArm': ['LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 'LElbowRoll'],#, 'LWristYaw'],
+            'LLeg': ['LHipYawPitch', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch', 'LAnkleRoll'], #TODO - documentation unclear on L/RAnkleRoll
+            'RLeg': ['RHipYawPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'RAnklePitch', 'RAnkleRoll'],
+            'RArm': ['RShoulderPitch', 'RShoulderRoll', 'RElbowYaw', 'RElbowRoll']#, 'RWristYaw']
+        }
 
     def think(self, perception):
         self.forward_kinematics(perception.joint)
@@ -52,7 +57,62 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
         :rtype: 4x4 matrix
         '''
         T = identity(4)
+
         # YOUR CODE HERE
+        sine = np.sin(joint_angle)
+        cosine = np.cos(joint_angle)
+
+        '''if("YawPitch" in joint_name):
+            return
+        el'''
+        if("Roll" in joint_name):
+            T[1,1] = cosine
+            T[1,2] = -sine
+            T[2,1] = sine
+            T[2,2] = cosine
+
+        elif("Pitch" in joint_name):
+            T[0,0] = cosine
+            T[0,2] = -sine
+            T[2,0] = sine
+            T[2,2] = cosine
+
+        elif("Yaw" in joint_name):
+            T[0,0] = cosine
+            T[0,1] = -sine
+            T[1,0] = sine
+            T[1,1] = cosine
+
+        X = 0
+        Y = 0
+        Z = 0
+        #head
+        if("HeadYaw" in joint_name):
+            Z = 126.5
+        #arms
+        elif("ShoulderPitch" in joint_name):
+            Y = 98
+            Z = 100
+        elif("ShoulderRoll" in joint_name):
+            X = 105
+            Y = 15
+        elif("WristYaw" in joint_name):
+            X = 55.95
+        #legs
+        elif("HipYaw" in joint_name):
+            Y = 50
+            Z = -85
+        elif("KneePitch" in joint_name):
+            Z = -100
+        elif ("AnklePitch" in joint_name):
+            Z = -102.9
+
+        if("R" in joint_name):
+            Y = -Y
+
+        T[3,0] = X
+        T[3,1] = Y
+        T[3,2] = Z
 
         return T
 
@@ -67,6 +127,7 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
                 angle = joints[joint]
                 Tl = self.local_trans(joint, angle)
                 # YOUR CODE HERE
+                T = np.dot(T, Tl)
 
                 self.transforms[joint] = T
 

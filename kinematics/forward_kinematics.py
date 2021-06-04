@@ -23,7 +23,7 @@ sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '
 from numpy.matlib import matrix, identity
 import numpy as np
 
-from angle_interpolation import AngleInterpolationAgent
+from joint_control.angle_interpolation import AngleInterpolationAgent
 
 
 class ForwardKinematicsAgent(AngleInterpolationAgent):
